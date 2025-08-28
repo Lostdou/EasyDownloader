@@ -7,7 +7,7 @@ class VideoDownloader:
         self.base_opts = {
             "noplaylist": True,
             "outtmpl": "output/%(title)s.%(ext)s",
-            "ffmpeg_location": r"C:\FFmpeg\bin",
+            "ffmpeg_location": r"assets\FFmpeg\bin",
         }
         self.progress_callback = None
         self.console_callback = None

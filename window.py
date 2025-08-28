@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext
 import webbrowser
 from PIL import Image, ImageTk
+import os
+import subprocess
 
 class DownloaderWindow:
     def __init__(self, master, translator):
@@ -119,6 +121,16 @@ class DownloaderWindow:
         )
         self.github_btn.pack(side="right")
 
+        self.folder_btn = ttk.Button(
+            self.github_frame,
+            text="Files installed >>",
+            command=self.open_output_folder,
+            cursor="hand2"
+        )
+        self.folder_btn.pack(side="left")
+
+        os.makedirs("output", exist_ok=True)
+
     def set_download_callback(self, callback):
         self.download_callback = callback
 
@@ -174,6 +186,7 @@ class DownloaderWindow:
         self.video_btn.config(text=self.translator.get('btn_video'))
         self.audio_btn.config(text=self.translator.get('btn_audio'))
         self.console_check.config(text=self.translator.get('show_console'))
+        self.folder_btn.config(text="Files installed >>" if self.lang_var.get() == 'english' else "Archivos descargados >>")
         
         # Solo actualizar la plataforma si hay una URL
         if hasattr(self, 'current_platform') and self.url_entry.get().strip():
@@ -198,9 +211,22 @@ class DownloaderWindow:
         self.enable_inputs()
         self.reset_progress()
         if success:
-            messagebox.showinfo("Success", self.translator.get('success_download', message))
+            result = messagebox.askquestion(
+                "Success",
+                self.translator.get('success_download', message) + "\n\n¿Desea abrir la carpeta?",
+                icon='info'
+            )
+            if result == 'yes':
+                self.open_output_folder()
         else:
             messagebox.showerror("Error", message)
 
     def open_github(self):
         webbrowser.open("https://github.com/Lostdou/EasyDownloader")
+
+    def open_output_folder(self):
+        folder_path = os.path.abspath("output")
+        if os.name == 'nt':  # Windows
+            os.startfile(folder_path)
+        else:  # Linux/Mac
+            subprocess.run(['xdg-open' if os.name == 'posix' else 'open', folder_path])
