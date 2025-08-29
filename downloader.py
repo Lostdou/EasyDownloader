@@ -35,7 +35,8 @@ class VideoDownloader:
         patterns = {
             'youtube': r'(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)',
             'twitter': r'(?:https?:\/\/)?(?:www\.)?(?:twitter\.com|x\.com)',
-            'instagram': r'(?:https?:\/\/)?(?:www\.)?(?:instagram\.com)'
+            'instagram': r'(?:https?:\/\/)?(?:www\.)?(?:instagram\.com)',
+            'tiktok': r'(?:https?:\/\/)?(?:www\.)?(?:tiktok\.com)'
         }
         
         for platform, pattern in patterns.items():
@@ -44,17 +45,40 @@ class VideoDownloader:
         return None
 
     def _get_platform_opts(self, platform):
+        base_video_opts = {
+            'format': 'best',
+            'merge_output_format': 'mp4',
+            'postprocessor_args': [
+                '-c:v', 'libx264',  
+                '-preset', 'medium',
+                '-c:a', 'aac', 
+                '-b:a', '192k', 
+                '-movflags', '+faststart'
+            ],
+        }
+
         if platform == 'twitter':
-            return {
-                'format': 'best',
-                'merge_output_format': 'mp4',
-            }
+            return base_video_opts
         elif platform == 'instagram':
-            return {
-                'format': 'best',
-                'merge_output_format': 'mp4',
-            }
-        # YouTube usa las opciones por defecto
+            return base_video_opts
+        elif platform == 'tiktok':
+            opts = base_video_opts.copy()
+            opts.update({
+                'legacy_server_connect': True,
+                'extractor_args': {
+                    'tiktok': {
+                        'download_timeout': 60,
+                        'encoding': 'utf-8'
+                    }
+                },
+                'headers': {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.5',
+                    'Upgrade-Insecure-Requests': '1'
+                }
+            })
+            return opts
         return {}
 
     def download_video(self, url):
@@ -71,11 +95,18 @@ class VideoDownloader:
                 "format": "bestvideo+bestaudio",
                 "merge_output_format": "mp4",
                 "postprocessor_args": [
-                    "-c:v", "copy",
-                    "-c:a", "aac",
-                    "-b:a", "192k"
+                    '-c:v', 'libx264',
+                    '-preset', 'medium',
+                    '-c:a', 'aac',
+                    '-b:a', '192k',
+                    '-movflags', '+faststart'
                 ],
             })
+        
+        if platform == 'tiktok':
+            url = url.split('?')[0]
+            if not url.startswith('http'):
+                url = 'https://' + url
         
         if self.console_callback:
             self.console_callback(f"Detected platform: {platform}")
